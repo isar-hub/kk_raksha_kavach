@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "276357716448",
+    "project_id": "kkrakshakavach",
+    "storage_bucket": "kkrakshakavach.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:276357716448:android:98e657e1b27096f9833385",
+        "android_client_info": {
+          "package_name": "com.isar.kkrakshakavach"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBV4pLdspyfvYc4oVjiKU4GexeTKaA3njA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
