@@ -25,17 +25,29 @@ class HomeFragment : Fragment() {
 
         binding = FragmentHomeBinding.inflate(inflater, container, false)
         // Inflate the layout for this fragment
+        initialize()
         return binding.root
     }
 
-    fun initialize(){
+    private fun initialize(){
         binding.gotoAddContact.setOnClickListener {
             goToAddContact()
         }
+        binding.addContactBtn.setOnClickListener {
+            goToAddContact()
+        }
+        binding.goToSOS.setOnClickListener {
+            goTOSOS()
+        }
     }
 
+    private fun goTOSOS() {
+        Navigation.findNavController(binding.root).navigate(R.id.action_homeFragment_to_soSFragment)
+    }
+
+
     private fun goToAddContact() {
-        Navigation.findNavController(binding.root)
+        Navigation.findNavController(binding.root).navigate(R.id.action_homeFragment_to_contactsFragment)
     }
 
 }

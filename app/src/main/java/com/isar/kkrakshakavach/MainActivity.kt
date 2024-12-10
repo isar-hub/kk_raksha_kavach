@@ -17,9 +17,17 @@
             super.onCreate(savedInstanceState)
             binding = ActivityMainBinding.inflate(layoutInflater)
             setContentView(binding.root)
+            setUpToolbar()
 
 
             navGrphImpl()
+        }
+        private fun setUpToolbar() {
+            setSupportActionBar(binding.toolbar)
+
+//            supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+
         }
 
         private fun navGrphImpl() {
@@ -29,4 +37,3 @@
             binding.bottomNavigationView.setupWithNavController(navController)
         }
     }
-    // 48 113 255 1

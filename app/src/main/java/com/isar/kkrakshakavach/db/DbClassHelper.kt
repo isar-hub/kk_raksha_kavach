@@ -10,17 +10,21 @@ import android.database.sqlite.SQLiteOpenHelper
 class DbClassHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, 1) {
 
     companion object {
-        const val DATABASE_NAME = "mylist.db"
-        const val TABLE_NAME = "mylist_data"
-        const val COL1 = "ID"
-        const val COL2 = "ITEM1"
+        const val DATABASE_NAME = "contacts.db"
+        const val TABLE_NAME = "contacts_data"
+        const val COL_ID = "ID"
+        const val COL_NAME = "NAME"
+        const val COL_PHONE = "PHONE"
+        const val COL_EMAIL = "EMAIL" // Optional: Add email field
     }
 
     override fun onCreate(db: SQLiteDatabase?) {
         val createTable = """
             CREATE TABLE $TABLE_NAME (
-                $COL1 INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COL2 TEXT
+                $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $COL_NAME TEXT,
+                $COL_PHONE TEXT,
+                $COL_EMAIL TEXT
             )
         """.trimIndent()
         db?.execSQL(createTable)
@@ -32,19 +36,34 @@ class DbClassHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     }
 
     // Add data to the database
-    fun addData(item1: String): Boolean {
+    fun addData(name: String, phone: String, email: String?): Boolean {
         val db = this.writableDatabase
         val contentValues = ContentValues()
-        contentValues.put(COL2, item1)
+        contentValues.put(COL_NAME, name)
+        contentValues.put(COL_PHONE, phone)
+        contentValues.put(COL_EMAIL, email)
 
         // Insert data and return true if successful, false if failure
         val result = db.insert(TABLE_NAME, null, contentValues)
         return result != -1L
     }
-
-    // Retrieve all data from the database
-    fun getListContents(): Cursor {
+    fun getAllContacts(): Cursor {
         val db = this.writableDatabase
         return db.rawQuery("SELECT * FROM $TABLE_NAME", null)
+    }
+    fun getContactById(id: Int): Cursor? {
+        val db = this.writableDatabase
+        return db.rawQuery("SELECT * FROM $TABLE_NAME WHERE $COL_ID = ?", arrayOf(id.toString()))
+    }
+    // Retrieve all data from the database
+//    fun getListContents(): Cursor {
+//        val db = this.writableDatabase
+//        return db.rawQuery("SELECT * FROM $TABLE_NAME", null)
+//    }
+
+    // Optional: Method to delete a contact
+    fun deleteContact(id: Int): Boolean {
+        val db = this.writableDatabase
+        return db.delete(TABLE_NAME, "$COL_ID = ?", arrayOf(id.toString())) > 0
     }
 }
