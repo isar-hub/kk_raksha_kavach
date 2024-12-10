@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.Navigation
 import com.isar.kkrakshakavach.databinding.FragmentHomeBinding
 
 
@@ -27,5 +28,14 @@ class HomeFragment : Fragment() {
         return binding.root
     }
 
+    fun initialize(){
+        binding.gotoAddContact.setOnClickListener {
+            goToAddContact()
+        }
+    }
+
+    private fun goToAddContact() {
+        Navigation.findNavController(binding.root)
+    }
 
 }

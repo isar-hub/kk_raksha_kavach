@@ -2,6 +2,23 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.KKRakshaKavach" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="colorSurface">@color/primary</item>
+        <item name="android:colorBackground">@color/black</item>
+        <item name="materialButtonStyle">@style/AppTheme.Button</item>
+        <item name="editTextStyle">@style/AppTheme.EditText</item>
+    </style>
+    <style name="AppTheme.Button" parent="Widget.MaterialComponents.Button">
+        <item name="cornerRadius">8dp</item>
+        <item name="backgroundTint">@color/primary</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+    <style name="AppTheme.EditText" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/rounded_edit_text_background</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:padding">12dp</item>
+
     </style>
 </resources>

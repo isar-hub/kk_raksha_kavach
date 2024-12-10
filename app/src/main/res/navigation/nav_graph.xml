@@ -2,17 +2,23 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/nav_graph.xml"
-    app:startDestination="@id/homeFragment2">
+    android:id="@+id/nav_graph"
+    app:startDestination="@+id/homeFragment">
 
     <fragment
-        android:id="@+id/homeFragment2"
+        android:id="@+id/homeFragment"
         android:name="com.isar.kkrakshakavach.HomeFragment"
         android:label="fragment_home"
         tools:layout="@layout/fragment_home" />
+
     <fragment
         android:id="@+id/settingFragment"
         android:name="com.isar.kkrakshakavach.SettingFragment"
         android:label="fragment_setting"
         tools:layout="@layout/fragment_setting" />
+    <fragment
+        android:id="@+id/contactsFragment"
+        android:name="com.isar.kkrakshakavach.ContactsFragment"
+        android:label="fragment_contacts"
+        tools:layout="@layout/fragment_contacts" />
 </navigation>

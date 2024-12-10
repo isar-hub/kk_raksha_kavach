@@ -5,4 +5,6 @@
     <color name="primary">#3071FF</color>
     <color name="secondary">#F6F8F9</color>
     <color name="textColor">#193238</color>
+    <color name="green" >#11FF00</color>
+    <color name="red" >#FF001E</color>
 </resources>
