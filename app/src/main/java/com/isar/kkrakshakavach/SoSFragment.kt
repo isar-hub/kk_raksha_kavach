@@ -44,8 +44,7 @@ class SoSFragment : Fragment(), LocationListener {
 
         // Check and request SMS permission
         if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.SEND_SMS
+                requireContext(), Manifest.permission.SEND_SMS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             ActivityCompat.requestPermissions(
@@ -74,11 +73,9 @@ class SoSFragment : Fragment(), LocationListener {
     private fun startLocationUpdates() {
         // Check for location permissions
         if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
+                requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_COARSE_LOCATION
+                requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             requestPermissions(
@@ -91,10 +88,9 @@ class SoSFragment : Fragment(), LocationListener {
         }
         val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
         if (!isGpsEnabled) {
+            isSendingSOS = false
             Toast.makeText(
-                requireContext(),
-                "Please enable GPS for location tracking.",
-                Toast.LENGTH_LONG
+                requireContext(), "Please enable GPS for location tracking.", Toast.LENGTH_LONG
             ).show()
             return
         }
@@ -103,7 +99,10 @@ class SoSFragment : Fragment(), LocationListener {
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             location?.let {
                 sendLocation(it)
-            } ?: Log.e("LocationError", "Last known location is null, requesting new location.")
+            } ?: {
+                Log.e("LocationError", "Last known location is null, requesting new location.")
+                isSendingSOS = false
+            }
             requestNewLocationData()
         }
 
@@ -123,13 +122,7 @@ class SoSFragment : Fragment(), LocationListener {
                 requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+            Toast.makeText(requireContext(), "Permission Denied", Toast.LENGTH_SHORT).show()
             return
         }
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
@@ -137,13 +130,16 @@ class SoSFragment : Fragment(), LocationListener {
                 Log.e("LocationError", "new location. $location")
                 sendLocation(it)
             } ?: Log.e("LocationError", "Unable to retrieve new location.")
+
+
         }
     }
 
     private fun sendLocation(location: Location) {
         val lat = location.latitude
         val lon = location.longitude
-        val message = " I need help! My location is: https://maps.google.com/?q=$lat,$lon"
+        val message =
+            "I need help! My location is: https://maps.google.com/?q=$lat,$lon \nPlease Listen this : https://jumpshare.com/s/lho3NO70Wt0sqKanfyTs"
 
         val contactList = ArrayList<String>()
 
@@ -170,11 +166,11 @@ class SoSFragment : Fragment(), LocationListener {
         }
 
         if (contactList.isEmpty()) {
+
             Toast.makeText(
-                requireContext(),
-                "No contacts available to send SOS.",
-                Toast.LENGTH_SHORT
+                requireContext(), "No contacts available to send SOS.", Toast.LENGTH_SHORT
             ).show()
+            isSendingSOS = false
             return
         }
 
@@ -202,9 +198,7 @@ class SoSFragment : Fragment(), LocationListener {
             ).show()
         } else {
             Toast.makeText(
-                requireContext(),
-                "Failed to send SOS message via SMS.",
-                Toast.LENGTH_LONG
+                requireContext(), "Failed to send SOS message via SMS.", Toast.LENGTH_LONG
             ).show()
         }
     }
@@ -218,8 +212,7 @@ class SoSFragment : Fragment(), LocationListener {
             startActivity(intent)
         } catch (e: Exception) {
             Log.e(
-                "WhatsAppError",
-                "Failed to send message to $phoneNumber via WhatsApp: ${e.message}"
+                "WhatsAppError", "Failed to send message to $phoneNumber via WhatsApp: ${e.message}"
             )
         }
     }

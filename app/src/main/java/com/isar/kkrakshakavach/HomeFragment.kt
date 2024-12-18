@@ -13,10 +13,7 @@ class HomeFragment : Fragment() {
 
     private  lateinit var binding : FragmentHomeBinding
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -34,7 +31,9 @@ class HomeFragment : Fragment() {
             goToAddContact()
         }
         binding.addContactBtn.setOnClickListener {
-            goToAddContact()
+//            goToAddContact()
+            goTOSOS()
+
         }
         binding.goToSOS.setOnClickListener {
             goTOSOS()
