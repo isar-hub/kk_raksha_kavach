@@ -57,5 +57,14 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.google.firebase.auth)
     implementation(libs.play.services.auth)
+    implementation (libs.androidx.camera.core)
+    implementation (libs.androidx.camera.lifecycle)
+    implementation (libs.androidx.camera.view)
+
+    implementation( libs.androidx.camera.core.v110)
+    implementation (libs.androidx.camera.camera2)
+    implementation (libs.androidx.camera.lifecycle.v110)
+    implementation (libs.androidx.camera.view.v110)
+    implementation (libs.androidx.camera.extensions)
 
 }

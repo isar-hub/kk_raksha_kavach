@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "276357716448",
-    "project_id": "kkrakshakavach",
-    "storage_bucket": "kkrakshakavach.firebasestorage.app"
+    "project_number": "286771577216",
+    "project_id": "kk-raksha-kavach",
+    "storage_bucket": "kk-raksha-kavach.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:276357716448:android:98e657e1b27096f9833385",
+        "mobilesdk_app_id": "1:286771577216:android:07fdf5f88a07bee6e70165",
         "android_client_info": {
           "package_name": "com.isar.kkrakshakavach"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBV4pLdspyfvYc4oVjiKU4GexeTKaA3njA"
+          "current_key": "AIzaSyBbn00C9MYWCrL5IERG0h-gQ0l84mmoHNc"
         }
       ],
       "services": {
