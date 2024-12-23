@@ -55,11 +55,6 @@ class DbClassHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         val db = this.writableDatabase
         return db.rawQuery("SELECT * FROM $TABLE_NAME WHERE $COL_ID = ?", arrayOf(id.toString()))
     }
-    // Retrieve all data from the database
-//    fun getListContents(): Cursor {
-//        val db = this.writableDatabase
-//        return db.rawQuery("SELECT * FROM $TABLE_NAME", null)
-//    }
 
     // Optional: Method to delete a contact
     fun deleteContact(id: Int): Boolean {

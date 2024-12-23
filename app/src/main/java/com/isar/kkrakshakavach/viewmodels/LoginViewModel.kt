@@ -25,7 +25,6 @@ class LoginViewModel : ViewModel() {
     /**
      * Login with Email and Password
      */
-
     fun loginWithEmail(email: String, password: String) {
         _loginLive.postValue(Results.Loading()) // Emit loading state
 

@@ -41,7 +41,6 @@ class RegisterActivity : AppCompatActivity() {
     }
     private fun goTOLogin(){
         startActivity(Intent(this, LoginActivity::class.java))
-
     }
 
     private fun validateFields(): Boolean {

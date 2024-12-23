@@ -44,15 +44,14 @@ class LoginActivity : AppCompatActivity() {
             .requestIdToken(getString(R.string.default_web_client_id)).requestEmail().build()
 
         val mGoogleSignInClient = GoogleSignIn.getClient(this, signInRequest)
+
         binding.googleSignInButton.setOnClickListener {
             val signInIntent = mGoogleSignInClient.signInIntent
             startActivityForResult(signInIntent, 1)
         }
-
         binding.goToRegister.setOnClickListener {
             goToRegisterPage()
         }
-
         binding.loginBtn.setOnClickListener {
             login()
         }
@@ -67,7 +66,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    fun goToRegisterPage() {
+    private fun goToRegisterPage() {
         startActivity(Intent(this, RegisterActivity::class.java))
     }
 
@@ -122,7 +121,6 @@ class LoginActivity : AppCompatActivity() {
     private fun validateFields(): Boolean {
         var isValid = true
 
-
         if (binding.emailField.text.isNullOrEmpty()) {
             binding.emailField.error = "Email cannot be empty"
             isValid = false
@@ -132,7 +130,6 @@ class LoginActivity : AppCompatActivity() {
             binding.passwordField.error = "Password cannot be empty"
             isValid = false
         }
-
 
         return isValid
     }

@@ -11,10 +11,10 @@ import com.isar.kkrakshakavach.R
 
 object CommonMethods {
 
-
     fun showLogs(tag : String,msg : String){
         Log.e(tag,msg)
     }
+
     fun showSnackBar(view: View, message: String, duration: Int = Snackbar.LENGTH_LONG, isSuccess : Boolean = true) {
 
         Snackbar.make(view, message, duration).apply { setBackgroundTint(
