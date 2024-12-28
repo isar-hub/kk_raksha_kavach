@@ -1,7 +1,12 @@
 package com.isar.kkrakshakavach
 
 import android.Manifest
+import android.app.Activity
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.location.Location
@@ -9,66 +14,72 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.telephony.SmsManager
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.SurfaceHolder
-import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
+import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
-import androidx.camera.core.SurfaceRequest
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.button.MaterialButton
+import com.google.firebase.FirebaseApp
 import com.google.firebase.storage.FirebaseStorage
+import com.isar.kkrakshakavach.databinding.FragmentSoSBinding
 import com.isar.kkrakshakavach.db.DbClassHelper
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
+
 
 class SoSFragment : Fragment(), LocationListener {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationManager: LocationManager
-    private lateinit var loader: ProgressBar
     private val handler = Handler()
     private lateinit var myDB: DbClassHelper
     private lateinit var imageCapture: ImageCapture
     private var isSendingSOS = false
-    private val firebaseStorage = FirebaseStorage.getInstance()
+    var storage: FirebaseStorage =
+        FirebaseStorage.getInstance(FirebaseApp.getInstance("StorageApp"))
     private var message = "";
     private lateinit var list: ArrayList<String>
-    private lateinit var surfaceView: PreviewView
+
+    //    private lateinit var surfaceView: PreviewView
     private lateinit var surfaceHolder: SurfaceHolder
+
+    private lateinit var binding: FragmentSoSBinding
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         // Inflate the layout for this fragment
-        val view = inflater.inflate(R.layout.fragment_so_s, container, false)
-        loader = view.findViewById(R.id.loader)
-        return view
+        binding = FragmentSoSBinding.inflate(inflater, container, false)
+
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -78,7 +89,7 @@ class SoSFragment : Fragment(), LocationListener {
 
 
         imageCapture = ImageCapture.Builder().build()
-        surfaceView = view.findViewById(R.id.previewView)
+//        surfaceView = binding.previewView
 
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
@@ -94,14 +105,13 @@ class SoSFragment : Fragment(), LocationListener {
         Log.d("SoSFragment", "Contacts loaded: ${list.size} contacts found")
 
 
-
         // Set up the SOS button click listener
         view.findViewById<MaterialButton>(R.id.bt_sendLocation).setOnClickListener {
             if (!isSendingSOS) {
                 Log.d("SoSFragment", "SOS button clicked")
 
-                runBlocking {
-                    startSending(list)
+                lifecycleScope.launch {
+                    startSending(contacts = list)
                 }
 //                startLocationUpdates()
             } else {
@@ -123,27 +133,34 @@ class SoSFragment : Fragment(), LocationListener {
     }
 
     private suspend fun startSending(contacts: ArrayList<String>) {
+
         isSendingSOS = true
-        loader.visibility = View.VISIBLE
+        binding.loader.visibility = View.VISIBLE
+
         Log.d("SoSFragment", "Starting to send SOS")
+        Log.d("SoSFragment", "Contacts $contacts")
+
         if (contacts.isNotEmpty()) {
+
             startLocationUpdates()
+
         } else {
             Toast.makeText(
                 requireContext(),
                 "Contacts are empty. Please add contacts first.",
                 Toast.LENGTH_LONG
             ).show()
-            loader.visibility = View.GONE
+            binding.loader.visibility = View.GONE
             isSendingSOS = false
             Log.w("SoSFragment", "No contacts found, unable to send SOS.")
+
 
         }
 
     }
 
 
-    private suspend fun startLocationUpdates() {
+    private fun startLocationUpdates() {
 
         Log.d("SoSFragment", "Starting location updates")
 
@@ -161,7 +178,7 @@ class SoSFragment : Fragment(), LocationListener {
 
         val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
         if (!isGpsEnabled) {
-            loader.visibility = View.GONE
+            binding.loader.visibility = View.GONE
             isSendingSOS = false
             Toast.makeText(
                 requireContext(),
@@ -180,8 +197,9 @@ class SoSFragment : Fragment(), LocationListener {
                 message =
                     "I need help! My location is: https://maps.google.com/?q=${it.latitude},${it.longitude}"
                 runBlocking {
-                    startCamera()
-                    sendMessages(message)
+                    async { startCamera() }.await()
+
+//                    sendMessages(message)
                 }
             } ?: run {
                 Log.e("LocationError", "Last known location is null, requesting new location.")
@@ -260,43 +278,30 @@ class SoSFragment : Fragment(), LocationListener {
         return SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
     }
 
-    //    private suspend fun uploadMediaFiles(contactList: ArrayList<String>, message: String) {
-//
-//
-//        // Simulated file paths (replace with actual file paths)
-//        val imagePath = startCamera()
-//        val audioPath = captureCurrentAudio()
-//        if (imagePath != null) {
-//            Log.e("MediaCaptureError", "Failed to capture imag")
-//            Toast.makeText(requireContext(), "Unable to capture media.", Toast.LENGTH_SHORT).show()
-//            putImage();
-//        } else if(audioPath != null){
-//            Log.e("MediaCaptureError", "Failed to capture imag")
-//            Toast.makeText(requireContext(), "Unable to capture media.", Toast.LENGTH_SHORT).show()
-//        }
-//
-//
-//        val audioFile = Uri.fromFile(File(audioPath))
-//        val imageFile = Uri.fromFile(File(imagePath))
-//
-//
-//    }
+
     private suspend fun putAudio(audioFile: Uri): Uri? {
 
         Log.d("SoSFragment", "Uploading audio file: ${audioFile.path}")
 
         var result: Uri? = null
-        val audioRef = firebaseStorage.reference.child("sos_audio/audio_${getTimeStamp()}.3gp")
+        val audioRef = storage.reference.child("sos_audio/audio_${getTimeStamp()}.3gp")
 
 
         audioRef.putFile(audioFile).addOnSuccessListener {
+
             audioRef.downloadUrl.addOnSuccessListener { audioUri ->
                 result = audioUri
                 Log.d("SoSFragment", "Audio uploaded successfully: $audioUri")
 
+                message += "  Audio: $result" // Append audio URI to message
+                isSendingSOS = false
+                binding.loader.visibility = View.GONE
+
+                sendMessages(message)
+
             }
         }.addOnFailureListener {
-            loader.visibility = View.GONE
+            binding.loader.visibility = View.GONE
             Log.e("FirebaseError", "Failed to upload audio: ${it.message}")
         }
         return result
@@ -305,20 +310,32 @@ class SoSFragment : Fragment(), LocationListener {
     private suspend fun putImage(imageFile: Uri): Uri? {
         Log.d("SoSFragment", "Uploading image file: ${imageFile.path}")
 
+
+        resizeImage(0, 0)
         var result: Uri? = null
-        val imageRef = firebaseStorage.reference.child("sos_images/image_${getTimeStamp()}.jpg")
+        val imageRef = storage.reference.child("sos_images/image_${getTimeStamp()}.jpg")
 
         // Use Tasks API to handle the upload operation
         try {
-            val uploadTask = imageRef.putFile(imageFile).await() // Use Kotlin coroutines
+            imageRef.putFile(imageFile).await() // Use Kotlin coroutines
             result = imageRef.downloadUrl.await() // Wait for the download URL
             Log.d("SoSFragment", "Image uploaded successfully: $result")
         } catch (e: Exception) {
-            loader.visibility = View.GONE
+            binding.loader.visibility = View.GONE
             Log.e("FirebaseError", "Failed to upload image: ${e.message}")
         }
 
         return result
+    }
+
+    fun resizeImage(height: Int, width: Int) {
+        val previewView: PreviewView = binding.previewView
+
+        val params = previewView.layoutParams
+        params.width = width
+        params.height = height
+        previewView.layoutParams = params
+
     }
 
     private fun startCamera() {
@@ -327,11 +344,12 @@ class SoSFragment : Fragment(), LocationListener {
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
 
+        resizeImage(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         cameraProviderFuture.addListener({
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
             val preview = Preview.Builder().build().also {
-                it.surfaceProvider = surfaceView.surfaceProvider
+                it.surfaceProvider = binding.previewView.surfaceProvider
             }
 
 
@@ -346,7 +364,7 @@ class SoSFragment : Fragment(), LocationListener {
                     imageCapture
                 )
                 lifecycleScope.launch {
-                    captureCurrentImage()
+                    async { captureCurrentImage() }.await()
                 }
             } catch (exc: Exception) {
                 Log.e("CameraX", "Binding failed", exc)
@@ -354,12 +372,19 @@ class SoSFragment : Fragment(), LocationListener {
             Log.d("SoSFragment", "Camera successfully bound")
 
 
-
         }, ContextCompat.getMainExecutor(requireContext()))
 
 
     }
-
+    private fun unbindCamera() {
+        Log.d("SoSFragment", "Unbinding camera")
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+        cameraProviderFuture.addListener({
+            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            cameraProvider.unbindAll() // Unbind all use cases
+            binding.previewView.visibility = View.GONE // Optionally hide the preview view
+        }, ContextCompat.getMainExecutor(requireContext()))
+    }
     private suspend fun captureCurrentImage() {
         Log.d("SoSFragment", "Capturing current image")
 
@@ -374,6 +399,7 @@ class SoSFragment : Fragment(), LocationListener {
         // Prepare to capture the image
         val outputOptions = ImageCapture.OutputFileOptions.Builder(imageFile).build()
 
+        delay(100)
         // Capture the image
         imageCapture.takePicture(
             outputOptions,
@@ -381,12 +407,15 @@ class SoSFragment : Fragment(), LocationListener {
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     // Handle the success of the image capture here
+
                     Log.d("ImageCapture", "Image saved: ${imageFile.absolutePath}")
                     lifecycleScope.launch {
-                        val image = putImage(imageUri)
-                        message += "Image: $image" // Use += to concatenate strings
-                        captureCurrentAudio() // Move this call here to ensure it executes after image capture
+                        val image = async { putImage(imageUri) }.await()
+                        message += "  Image: $image" // Use += to concatenate strings
+                        unbindCamera()
+                        async { captureCurrentAudio() }.await()
                     }
+
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -417,14 +446,14 @@ class SoSFragment : Fragment(), LocationListener {
 
             // Sleep to record 10 seconds of audio (or configure duration as needed)ima
             delay(10000)
+
             recorder.stop()
 
+            delay(100)
             runBlocking {
-                val audio = putAudio(Uri.fromFile(audioFile))
-                message += "Audio: $audio" // Append audio URI to message
-                isSendingSOS = false
-                loader.visibility = View.GONE
-                sendMessages(message)
+                async { putAudio(Uri.fromFile(audioFile)) }.await()
+
+
             }
         } catch (e: Exception) {
             Log.e("AudioCaptureError", "Error capturing audio: ${e.message}")
@@ -436,16 +465,51 @@ class SoSFragment : Fragment(), LocationListener {
     }
 
     private fun sendMessages(message: String) {
-        Log.d("SoSFragment", "Sending messages to contacts")
+        val deliveryIntent = PendingIntent.getBroadcast(
+            requireContext(),
+            0,
+            Intent("SMS_DELIVERED"),
+            PendingIntent.FLAG_IMMUTABLE
+        )
 
+        // Register the broadcast receiver for SMS delivery
+        val deliveryReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                when (resultCode) {
+                    Activity.RESULT_OK -> Log.d("SMS", "SMS delivered successfully")
+                    SmsManager.RESULT_ERROR_GENERIC_FAILURE -> Log.e("SMS", "Generic failure")
+                    SmsManager.RESULT_ERROR_NO_SERVICE -> Log.e("SMS", "No service available")
+                    SmsManager.RESULT_ERROR_NULL_PDU -> Log.e("SMS", "Null PDU")
+                    SmsManager.RESULT_ERROR_RADIO_OFF -> Log.e("SMS", "Radio off")
+                    else -> Log.e("SMS", "Unknown error code: $resultCode")
+                }
+            }
+        }
+        registerReceiver(
+            requireContext(),
+            deliveryReceiver,
+            IntentFilter("SMS_DELIVERED"),
+            ContextCompat.RECEIVER_NOT_EXPORTED // Use RECEIVER_NOT_EXPORTED for security
+        )
+        Log.d("SoSFragment", "Broadcast receiver registered")
+
+        Log.d("SoSFragment", "Sending messages to contacts message = $message")
         for (contact in list) {
             try {
-                SmsManager.getDefault().sendTextMessage(contact, null, message, null, null)
+                SmsManager.getDefault().sendTextMessage(contact, null, message, null, deliveryIntent)
                 Log.d("SMS", "Sent message to $contact")
             } catch (e: Exception) {
                 Log.e("SMSError", "Failed to send message to $contact: ${e.message}")
             }
         }
+        Handler(Looper.getMainLooper()).postDelayed({
+            try {
+                requireActivity().unregisterReceiver(deliveryReceiver)
+            } catch (e: IllegalArgumentException) {
+                Log.e("SMS", "Receiver already unregistered: ${e.message}")
+            }
+        }, 5000)
+
     }
 
     override fun onLocationChanged(location: Location) {

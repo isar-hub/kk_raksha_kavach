@@ -2,12 +2,14 @@ package com.isar.kkrakshakavach.utils
 
 import android.app.Dialog
 import android.content.Context
-import android.content.res.Resources
 import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import com.isar.kkrakshakavach.R
+
 
 object CommonMethods {
 
@@ -37,6 +39,11 @@ object CommonMethods {
         }
     }
 
+
+    fun initializeFirebase(context : Context){
+
+
+    }
     // Function to hide the loader
     fun hideLoader() {
         loaderDialog?.dismiss()
