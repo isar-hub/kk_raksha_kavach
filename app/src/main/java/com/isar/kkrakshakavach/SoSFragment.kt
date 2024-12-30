@@ -67,10 +67,6 @@ class SoSFragment : Fragment(), LocationListener {
         FirebaseStorage.getInstance(FirebaseApp.getInstance("StorageApp"))
     private var message = "";
     private lateinit var list: ArrayList<String>
-
-    //    private lateinit var surfaceView: PreviewView
-    private lateinit var surfaceHolder: SurfaceHolder
-
     private lateinit var binding: FragmentSoSBinding
 
     override fun onCreateView(

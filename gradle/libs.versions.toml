@@ -1,34 +1,30 @@
 [versions]
 agp = "8.5.0"
-cameraCore = "1.4.1"
-cameraCoreVersion = "1.1.0"
-cameraLifecycle = "1.1.0"
-cameraView = "1.1.0"
+cameraLifecycle = "1.4.1"
+cameraView = "1.4.1"
 firebaseAuth = "23.1.0"
 firebaseBom = "33.7.0"
 kotlin = "1.9.0"
-coreKtx = "1.13.1"
+coreKtx = "1.15.0"
 junit = "4.14-SNAPSHOT"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 appcompat = "1.7.0"
 material = "1.12.0"
-activity = "1.9.1"
+activity = "1.9.3"
 constraintlayout = "2.2.0"
-navigationUiKtx = "2.8.4"
-playServicesAuth = "21.2.0"
+navigationUiKtx = "2.8.5"
+playServicesAuth = "21.3.0"
 googleGmsGoogleServices = "4.4.2"
 playServicesLocation = "21.3.0"
 firebaseStorageKtx = "21.0.1"
 
 [libraries]
-androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraCoreVersion" }
-androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
-androidx-camera-core-v110 = { module = "androidx.camera:camera-core", version.ref = "cameraCoreVersion" }
-androidx-camera-extensions = { module = "androidx.camera:camera-extensions", version.ref = "cameraCoreVersion" }
-androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraCore" }
+
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraLifecycle" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraLifecycle" }
 androidx-camera-lifecycle-v110 = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraLifecycle" }
-androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraCore" }
+androidx-camera-video = { module = "androidx.camera:camera-video", version.ref = "cameraLifecycle" }
 androidx-camera-view-v110 = { module = "androidx.camera:camera-view", version.ref = "cameraView" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationUiKtx" }

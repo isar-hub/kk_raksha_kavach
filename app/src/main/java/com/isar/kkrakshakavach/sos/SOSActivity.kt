@@ -1,5 +1,6 @@
 package com.isar.kkrakshakavach.sos
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -10,6 +11,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.VideoCapture
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
@@ -76,7 +81,7 @@ class SOSActivity : AppCompatActivity() {
         CommonMethods.showLogs("SOSActivity", "Starting camera initialization")
 
         binding.previewView.visibility = View.VISIBLE
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(applicationContext)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             val preview = androidx.camera.core.Preview.Builder().build().also {
@@ -84,13 +89,20 @@ class SOSActivity : AppCompatActivity() {
             }
 
             imageCapture = ImageCapture.Builder().build()
+            val recorder = Recorder.Builder()
+                .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
+                .build()
+
+            val videoCapture = VideoCapture.withOutput(recorder)
+
             cameraViewModel.setImageCapture(imageCapture!!)
+            cameraViewModel.setVideoCapture(videoCapture)
 
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview,videoCapture, imageCapture)
                 cameraViewModel.startCaptureAndUploadFlow(viewModel, imageCapture!!,this)
 
                 CommonMethods.showLogs("SOSActivity", "Camera successfully initialized")

@@ -1,23 +1,36 @@
 package com.isar.kkrakshakavach.sos
 
+import android.Manifest
 import android.app.Application
+import android.content.ContentValues
 import android.content.Context
-import android.media.MediaRecorder
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
 import android.provider.MediaStore
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FileDescriptorOutputOptions
+import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
+import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_ENCODING_FAILED
+import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_NO_VALID_DATA
+import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_RECORDER_ERROR
+import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_UNKNOWN
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.FirebaseApp
 import com.google.firebase.storage.FirebaseStorage
 import com.isar.kkrakshakavach.utils.CommonMethods
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.delay
@@ -106,6 +119,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         viewModel: SOSViewmodel, imageCapture: ImageCapture, context: Context
     ) {
         this.imageCapture = imageCapture
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 CommonMethods.showLogs("CAMERA", "arting capture and upload flow")
@@ -113,6 +127,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
                 // Capture Video
                 val videoUri = recordVideo()
+                CommonMethods.showLogs("Camer","Video Get")
                 val videoUrl = uploadToFirebase(videoUri, "videos/")
                 viewModel.appendMessage("Video URL: $videoUrl")
                 CommonMethods.showLogs("CAMERA", "Video uploaded: $videoUrl")
@@ -137,41 +152,121 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private suspend fun recordVideo(): Uri {
         return suspendCancellableCoroutine { continuation ->
             try {
-                val videoFile = File(
-                    appContext.externalCacheDir, generateUniqueFilename() + ".mp4"
-                )
 
                 val contentResolver = appContext.contentResolver
-                val collectionUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-                val mediaStoreOutputOptions =
-                    MediaStoreOutputOptions.Builder(contentResolver, collectionUri).build()
+//                val collectionUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, "${generateUniqueFilename()}.mp4")
+                    put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                }
+//                val videoUri = contentResolver.insert(collectionUri, contentValues)
+//                if (videoUri == null) {
+//                    continuation.resumeWithException(Exception("Failed to create MediaStore entry. URI is null."))
+//                    return@suspendCancellableCoroutine
+//                }
+//                else{
+//                    CommonMethods.showLogs("SOS","$videoUri")
+//                }
 
 
-                activeRecording = videoCapture?.output?.prepareRecording(
-                    appContext, mediaStoreOutputOptions
-                )?.start(Dispatchers.IO.asExecutor()) { recordEvent ->
-                    when (recordEvent) {
-                        is VideoRecordEvent.Finalize -> {
-                            if (recordEvent.hasError()) {
-                                continuation.resumeWithException(Exception("Error recording video: ${recordEvent.error}"))
-                            } else {
-                                val videoUri = Uri.fromFile(videoFile)
-                                CommonMethods.showLogs(
-                                    "CAMERA",
-                                    "Video recording finalized: $videoUri"
-                                )
-                                continuation.resume(videoUri)
-                            }
-                        }
-                        else -> {
 
-                        }
+                val mediaStoreOutputOptions = MediaStoreOutputOptions
+                    .Builder(contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+                    .setContentValues(contentValues)
+                    .build()
+
+
+                if (activeRecording != null) {
+                    throw Exception("Recording is already in progress.")
+                }
+                if (ActivityCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    continuation.resumeWithException(Exception("Audio recording permission not granted"))
+                    return@suspendCancellableCoroutine
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (ActivityCompat.checkSelfPermission(
+                            appContext, Manifest.permission.READ_MEDIA_VIDEO
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        continuation.resumeWithException(
+                            Exception("Media access permission not granted for Android 13+")
+                        )
+                        return@suspendCancellableCoroutine
+                    }
+                } else {
+                    if (ActivityCompat.checkSelfPermission(
+                            appContext, Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        continuation.resumeWithException(
+                            Exception("External Storage permission not granted")
+                        )
+                        return@suspendCancellableCoroutine
                     }
                 }
 
-                viewModelScope.launch(Dispatchers.IO) {
-                    delay(15000)
-                    stopVideoRecording()
+
+
+                activeRecording = videoCapture!!.output.prepareRecording(appContext, mediaStoreOutputOptions)
+                    .withAudioEnabled()
+                    .start(Dispatchers.IO.asExecutor()) { recordEvent ->
+
+                        when (recordEvent) {
+                            is VideoRecordEvent.Status ->{
+//                                CommonMethods.showLogs("CAMERA","STATUS = ${recordEvent.recordingStats}")
+                            }
+                            is VideoRecordEvent.Resume ->{
+
+                            }
+                            is VideoRecordEvent.Finalize -> {
+                                CommonMethods.showLogs("CAMERA", "Video recording finalized")
+
+                                if (recordEvent.hasError()) {
+
+                                    continuation.resumeWithException(Exception("Error recording video: ${recordEvent.error} ${recordEvent.outputResults}"))
+//                                    when (recordEvent.error) {
+//                                        ERROR_UNKNOWN, ERROR_RECORDER_ERROR, ERROR_ENCODING_FAILED, ERROR_NO_VALID_DATA -> {
+//                                            if (recordEvent.outputOptions is FileOutputOptions) {
+//                                                try {
+//                                                    (recordEvent.outputOptions as FileOutputOptions).file.delete()
+//                                                    CommonMethods.showLogs("VIDEO_CAPTURE", "File deleted for FileOutputOptions.")
+//                                                } catch (e: Exception) {
+//                                                    CommonMethods.showLogs("VIDEO_CAPTURE", "Failed to delete file for FileOutputOptions: ${e.message}")
+//                                                }
+//                                            } else if (recordEvent.outputOptions is MediaStoreOutputOptions) {
+//                                                val uri = recordEvent.outputResults.outputUri
+//                                                if (uri !== Uri.EMPTY) {
+//                                                    try {
+//                                                        appContext.contentResolver.delete(uri, null, null)
+//                                                        CommonMethods.showLogs("VIDEO_CAPTURE", "MediaStore entry deleted for URI: $uri")
+//                                                    } catch (e: Exception) {
+//                                                        CommonMethods.showLogs("VIDEO_CAPTURE", "Failed to delete MediaStore entry for URI: $uri, error: ${e.message}")
+//                                                    }
+//                                                } else {
+//                                                    CommonMethods.showLogs("VIDEO_CAPTURE", "MediaStore URI is empty, nothing to delete.")
+//                                                }
+//                                            } else if (recordEvent.outputOptions is FileDescriptorOutputOptions) {
+//                                                CommonMethods.showLogs("VIDEO_CAPTURE", "Unhandled case: FileDescriptorOutputOptions.")
+//                                            } else {
+//                                                CommonMethods.showLogs("VIDEO_CAPTURE", "Unhandled outputOptions type: ${recordEvent.outputOptions::class.simpleName}")
+//                                            }
+//                                        }
+//                                        else -> {
+//                                            CommonMethods.showLogs("VIDEO_CAPTURE", "Unhandled error code: ${recordEvent.error}")
+//                                        }
+//                                    }
+                                } else {
+                                    continuation.resume(recordEvent.outputResults.outputUri)
+                                }
+                            }
+
+                        }
+                    }
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    delay(15000) // Delay for recording duration
+                    activeRecording?.stop() // Stop recording after delay
+//                    ProcessCameraProvider.getInstance(appContext).
                 }
 
                 CommonMethods.showLogs("CAMERA", "Video recording started")
@@ -186,12 +281,16 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private fun stopVideoRecording() {
         try {
             activeRecording?.stop()
+            activeRecording = null
+            CommonMethods.showLogs("TAG","$activeRecording  $videoCapture")
+
             CommonMethods.showLogs("CAMERA", "Video recording stopped")
         } catch (e: Exception) {
             CommonMethods.showLogs("CAMERA", "Error stopping video recording: ${e.message}")
             errorMessage.postValue("Error stopping video recording: ${e.message}")
         } finally {
-            activeRecording = null
+
+
         }
     }
 

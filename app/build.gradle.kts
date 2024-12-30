@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.isar.kkrakshakavach"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.isar.kkrakshakavach"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -49,6 +49,12 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.play.services.location)
     implementation(libs.firebase.storage.ktx)
+    implementation (libs.androidx.camera.core)
+    implementation (libs.androidx.camera.camera2)
+    implementation (libs.androidx.camera.lifecycle.v110)
+    implementation (libs.androidx.camera.video)
+    implementation(libs.androidx.camera.view.v110) // For video recording
+
 //    testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -58,14 +64,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.google.firebase.auth)
     implementation(libs.play.services.auth)
-    implementation (libs.androidx.camera.core)
-    implementation (libs.androidx.camera.lifecycle)
-    implementation (libs.androidx.camera.view)
 
-    implementation( libs.androidx.camera.core.v110)
-    implementation (libs.androidx.camera.camera2)
-    implementation (libs.androidx.camera.lifecycle.v110)
-    implementation (libs.androidx.camera.view.v110)
-    implementation (libs.androidx.camera.extensions)
+
 
 }

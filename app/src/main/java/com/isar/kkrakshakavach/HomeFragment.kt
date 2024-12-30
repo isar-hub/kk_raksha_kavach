@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -57,13 +58,17 @@ class HomeFragment : Fragment() {
     private fun requestMultiplePermissions() {
         permissionManager
             .rationale("The app needs these permissions to work properly.")
-            .request(Permission.Camera, Permission.Audio, Permission.Location)
+            .request(Permission.Camera, Permission.Audio, Permission.Location,Permission.SMS,Permission.STORAGE)
             .checkDetailedPermission { results ->
                 handlePermissionResults(results)
             }
     }
 
     private fun handlePermissionResults(results: Map<Permission, Boolean>) {
+
+        results.forEach { (permission, granted) ->
+            Log.d("PermissionRequest", "Permission: $permission, Granted: $granted")
+        }
         val deniedPermissions = results.filterNot { it.value }.keys
         if (deniedPermissions.isNotEmpty()) {
             val permanentlyDeclined = deniedPermissions.filter {

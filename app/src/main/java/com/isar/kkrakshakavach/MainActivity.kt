@@ -43,7 +43,6 @@ class MainActivity : AppCompatActivity() {
         navGraphImpl()
         observeGps()
 
-        requestPermissions()
 
 
     }
@@ -73,16 +72,16 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
-    private fun requestPermissions() {
-        val permissions = arrayOf(
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-
-        ActivityCompat.requestPermissions(this, permissions, 1)
-    }
+//    private fun requestPermissions() {
+//        val permissions = arrayOf(
+//            Manifest.permission.SEND_SMS,
+//            Manifest.permission.READ_EXTERNAL_STORAGE,
+//            Manifest.permission.ACCESS_FINE_LOCATION,
+//            Manifest.permission.ACCESS_COARSE_LOCATION
+//        )
+//
+//        ActivityCompat.requestPermissions(this, permissions, 1)
+//    }
 
 
 
