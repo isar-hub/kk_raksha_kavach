@@ -10,5 +10,7 @@
     <string name="previous">Previous</string>
     <string name="signup_text">Don\'t have an account? <u>Sign Up</u></string>
     <string name="login_text">Already have an account? <u>Log in</u></string>
+    <string name="forgot_text"><u>Forgot Password?</u></string>
+
     <string name="default_web_client_id">276357716448-qc65fpgq7ce12ll34ldlguemk7mqm3dn.apps.googleusercontent.com</string>
 </resources>

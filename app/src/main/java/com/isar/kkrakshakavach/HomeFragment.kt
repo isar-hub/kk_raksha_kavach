@@ -16,6 +16,7 @@ import com.isar.kkrakshakavach.permissions.CameraPermissionTextProvider
 import com.isar.kkrakshakavach.permissions.Permission
 import com.isar.kkrakshakavach.permissions.PermissionDialog.permissionDialog
 import com.isar.kkrakshakavach.permissions.PermissionManager
+import com.isar.kkrakshakavach.sos.SOSActivity
 
 class HomeFragment : Fragment() {
 
@@ -37,8 +38,8 @@ class HomeFragment : Fragment() {
 
         with(binding) {
             gotoAddContact.setOnClickListener { navigateTo(R.id.action_homeFragment_to_contactsFragment) }
-            addContactBtn.setOnClickListener { navigateTo(R.id.action_homeFragment_to_soSFragment) }
-            goToSOS.setOnClickListener { navigateTo(R.id.action_homeFragment_to_soSFragment) }
+            addContactBtn.setOnClickListener { navigateToSOSActivity() }
+            goToSOS.setOnClickListener { navigateToSOSActivity() }
         }
     }
 
@@ -50,6 +51,9 @@ class HomeFragment : Fragment() {
         Navigation.findNavController(binding.root).navigate(destinationId)
     }
 
+    private fun navigateToSOSActivity(){
+        startActivity(Intent(requireContext(),SOSActivity::class.java))
+    }
     private fun requestMultiplePermissions() {
         permissionManager
             .rationale("The app needs these permissions to work properly.")

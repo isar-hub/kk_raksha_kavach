@@ -3,17 +3,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/primary"
+    android:background="@color/secondary"
     tools:context=".SettingFragment">
 
-    <TextView
+    <Button
+        android:id="@+id/signout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:background="@drawable/s"
-        android:textSize="40sp"
         android:padding="10dp"
         android:layout_margin="10dp"
         android:gravity="center"
-        android:text="Under Development" />
+        android:text="Signout" />
 
 </FrameLayout>

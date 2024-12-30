@@ -99,7 +99,6 @@ class SoSFragment : Fragment(), LocationListener {
 
 
 
-        requestPermissions()
 
         list = getAllContacts()
         Log.d("SoSFragment", "Contacts loaded: ${list.size} contacts found")
@@ -121,16 +120,6 @@ class SoSFragment : Fragment(), LocationListener {
         }
     }
 
-    private fun requestPermissions() {
-        val permissions = arrayOf(
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-
-        ActivityCompat.requestPermissions(requireActivity(), permissions, 1)
-    }
 
     private suspend fun startSending(contacts: ArrayList<String>) {
 
@@ -172,7 +161,6 @@ class SoSFragment : Fragment(), LocationListener {
         ) {
             Log.w("SoSFragment", "Location permissions not granted")
 
-            requestPermissions()
             return
         }
 

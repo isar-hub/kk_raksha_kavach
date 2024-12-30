@@ -1,5 +1,6 @@
 package com.isar.kkrakshakavach.viewmodels
 
+import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -68,6 +69,19 @@ class LoginViewModel : ViewModel() {
             _registerLive.postValue(Results.Error(e.message ?: "Unexpected error occurred"))
         }
     }
+     fun forgotPassword(email: String, callback: (Boolean) -> Unit) {
+        firebaseAuth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // Call the callback with success
+                    callback(true)
+                } else {
+                    // Call the callback with failure
+                    callback(false)
+                }
+            }
+    }
+
 
     fun firebaseAuthWithGoogle(idToken: String) {
         _loginLive.postValue(Results.Loading())

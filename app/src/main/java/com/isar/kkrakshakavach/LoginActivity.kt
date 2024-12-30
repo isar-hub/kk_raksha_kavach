@@ -2,6 +2,8 @@ package com.isar.kkrakshakavach
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -30,15 +32,7 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        FirebaseApp.initializeApp(this)
-        val storageOptions: FirebaseOptions = FirebaseOptions.Builder()
-            .setApplicationId("1:576503878859:android:f43e322f03e6ce347ef74e") // Another app's mobile sdk app id if needed
-            .setApiKey("AIzaSyDS-2I1vnITe1WdOMCCH-lyKOD83cX_ces") // Same API Key if shared
-            .setDatabaseUrl("https://imagine-bc615-default-rtdb.firebaseio.com") // Same Database URL if shared
-            .setStorageBucket("imagine-bc615.appspot.com") // Same Storage Bucket if shared
-            .build();
 
-        FirebaseApp.initializeApp(this, storageOptions, "StorageApp")
 
         viewModel = ViewModelProvider(this)[LoginViewModel::class.java]
 
@@ -46,6 +40,8 @@ class LoginActivity : AppCompatActivity() {
         if (user != null) {
             gotoHome(user)
         }
+
+        forgotPass()
 
         observers()
 
@@ -66,6 +62,39 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+    private fun forgotPass() {
+        binding.forgotPass.setOnClickListener {
+            // Create a dialog
+            val dialog = android.app.AlertDialog.Builder(this)
+            val emailInput = EditText(this)
+            emailInput.hint = "Enter your email"
+            emailInput.inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+
+            dialog.setTitle("Forgot Password")
+            dialog.setMessage("Enter your email to reset your password")
+            dialog.setView(emailInput)
+            dialog.setPositiveButton("Submit") { _, _ ->
+                val email = emailInput.text.toString().trim()
+                if (email.isEmpty()) {
+                    Toast.makeText(this, "Please enter a valid email", Toast.LENGTH_SHORT).show()
+                } else {
+                    // Call forgotPassword method
+                    viewModel.forgotPassword(email) { isSuccess ->
+                        if (isSuccess) {
+                            Toast.makeText(this, "Reset email sent successfully", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "Failed to send reset email", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+            dialog.setNegativeButton("Cancel") { dialogInterface, _ ->
+                dialogInterface.dismiss()
+            }
+            dialog.show()
+        }
+    }
+
     private fun login() {
         if (validateFields()) {
             viewModel.loginWithEmail(
@@ -74,6 +103,7 @@ class LoginActivity : AppCompatActivity() {
 
         }
     }
+
 
     private fun goToRegisterPage() {
         startActivity(Intent(this, RegisterActivity::class.java))
