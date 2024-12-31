@@ -8,7 +8,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
+import android.widget.Toast
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -129,9 +132,14 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                 val videoUri = recordVideo()
                 CommonMethods.showLogs("Camer","Video Get")
                 val videoUrl = uploadToFirebase(videoUri, "videos/")
-                viewModel.appendMessage("Video URL: $videoUrl")
+                Handler(Looper.getMainLooper()).post {
+                    viewModel.sendCamerasSms(appContext,"Video = $videoUrl")
+                }
+
+//                viewModel.appendMessage("Video URL: $videoUrl")
                 CommonMethods.showLogs("CAMERA", "Video uploaded: $videoUrl")
 
+                Toast.makeText(context, "Video Sent Successfully", Toast.LENGTH_LONG).show()
                 // Capture Photo
                 val imageUri = capturePhoto()
                 val imageUrl = uploadToFirebase(imageUri, "images/")
@@ -140,7 +148,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
 
                 // Send SMS
-                viewModel.sendCamerasSms(context)
+//                viewModel.sendCamerasSms(context)
                 CommonMethods.showLogs("CAMERA", "SOS sent successfully")
             } catch (e: Exception) {
                 CommonMethods.showLogs("CAMERA", "Error in capture and upload flow: ${e.message}")

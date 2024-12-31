@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -40,7 +41,7 @@ class SOSActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySosactivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val dbHelper = DbClassHelper(this)
         val fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         val repository = SOSRepository(dbHelper, fusedLocationProviderClient, this)

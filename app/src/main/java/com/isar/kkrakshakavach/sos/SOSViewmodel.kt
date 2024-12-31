@@ -48,14 +48,15 @@ class SOSViewmodel(private val repository: SOSRepository) : ViewModel() {
         repository.sendSMS(contact, message, context,this)
     }
 
-    fun sendCamerasSms(context: Context) {
+    fun sendCamerasSms(context: Context,newMessage: String) {
         if(allContacts.value.isNullOrEmpty()){
             Toast.makeText(context,"Please Add Contact First", Toast.LENGTH_LONG).show()
+            isSendingSos.postValue(false)
             return
         }
         else{
             allContacts.value!!.forEach {
-                sendSms(it,context)
+                repository.sendSMS(it,newMessage,context, this)
             }
         }
 
