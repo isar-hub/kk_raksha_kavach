@@ -1,18 +1,20 @@
 package com.isar.kkrakshakavach.sos
 
+import android.app.Activity
 import android.content.Context
 import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.isar.kkrakshakavach.utils.CommonMethods
 
 class SOSViewmodel(private val repository: SOSRepository) : ViewModel() {
 
     private val _locationLiveData = MutableLiveData<LocationUpdate>()
     val locationLiveData: LiveData<LocationUpdate> get() = _locationLiveData
 
-    var isSendingSos = MutableLiveData(false)
+    var isSendingSos = MutableLiveData(Pair(false,""))
     private var messageString: String = ""
     val message: String get() = messageString
      fun appendMessage(newMessage: String) {
@@ -48,19 +50,30 @@ class SOSViewmodel(private val repository: SOSRepository) : ViewModel() {
         repository.sendSMS(contact, message, context,this)
     }
 
-    fun sendCamerasSms(context: Context,newMessage: String) {
-        if(allContacts.value.isNullOrEmpty()){
-            Toast.makeText(context,"Please Add Contact First", Toast.LENGTH_LONG).show()
-            isSendingSos.postValue(false)
+    fun sendCamerasSms(context: Context, newMessage: String) {
+        // Log the state of allContacts
+        CommonMethods.showLogs("SOS", "allContacts.value: ${allContacts.value}")
+
+        if (allContacts.value.isNullOrEmpty()) {
+            CommonMethods.showLogs("SOS", "allContacts is empty or null")
+
+            (context as? Activity)?.runOnUiThread {
+                Toast.makeText(context, "Please Add Contact First", Toast.LENGTH_LONG).show()
+            }
+            isSendingSos.postValue(Pair(false, ""))
             return
-        }
-        else{
+        } else {
+            CommonMethods.showLogs("SOS", "allContacts is not empty, sending messages")
+
+            isSendingSos.postValue(Pair(true, "Sending Message"))
+
             allContacts.value!!.forEach {
-                repository.sendSMS(it,newMessage,context, this)
+                CommonMethods.showLogs("SOS", "Sending SMS to: $it")
+                repository.sendSMS(it, newMessage, context, this)
             }
         }
-
     }
+
 }
 
 class SOSViewModelFactory(private val repository: SOSRepository) : ViewModelProvider.Factory {

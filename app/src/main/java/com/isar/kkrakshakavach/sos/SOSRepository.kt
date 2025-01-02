@@ -2,6 +2,7 @@ package com.isar.kkrakshakavach.sos
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -68,12 +69,20 @@ class SOSRepository(
         try {
             val smsManager = context.getSystemService(SmsManager::class.java)
             smsManager.sendTextMessage(contact, null, message, null, null)
-            CommonMethods.showLogs("SMS","SMS SEND TO $contact, and $message")
-            viewModel.isSendingSos.postValue(false)
+            (context as? Activity)?.runOnUiThread {
+                Toast.makeText(context, "Location Sent", Toast.LENGTH_SHORT).show()
+            }
+            CommonMethods.showLogs("SMS","Sms sent to $contact")
+
+            viewModel.isSendingSos.postValue(Pair(false,""))
 
         } catch (e: Exception) {
+            viewModel.isSendingSos.postValue(Pair(false,""))
             CommonMethods.showLogs("SMS","FAILED : ${e.message}")
-            Toast.makeText(context, "Failed to send SMS to ${e.message}", Toast.LENGTH_SHORT).show()
+            (context as? Activity)?.runOnUiThread {
+                Toast.makeText(context, "Failed to send SMS to ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+
         }
     }
 }

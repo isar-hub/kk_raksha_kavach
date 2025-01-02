@@ -24,6 +24,7 @@ import com.google.android.gms.location.LocationServices
 import com.isar.kkrakshakavach.databinding.ActivitySosactivityBinding
 import com.isar.kkrakshakavach.db.DbClassHelper
 import com.isar.kkrakshakavach.utils.CommonMethods
+import com.isar.kkrakshakavach.utils.LoaderWithStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 
@@ -54,33 +55,41 @@ class SOSActivity : AppCompatActivity() {
 
         binding.btSendLocation.setOnClickListener {
             CommonMethods.showLogs("SOSActivity", "Send Location button clicked")
-            viewModel.isSendingSos.postValue(true)
-//            viewModel.fetchLocation(this)
+            viewModel.isSendingSos.postValue(Pair(true,"Fetching Location"))
+            viewModel.fetchLocation(this)
             startCamera()
         }
-
+                setupObservers()
+                setupCameraObservers()
 
         viewModel.isSendingSos.observe(this) {
             CommonMethods.showLogs("SOSActivity", "isSendingSos observed with value: $it")
-            if (it) {
-                setupObservers()
-                setupCameraObservers()
+            if (it.first) {
+                LoaderWithStatus.show(this,it.second)
+//                setupObservers()
+//                setupCameraObservers()
             }
-            binding.loader.apply {
-                if (it) {
-                    visibility = View.VISIBLE
-                    isEnabled = false
-                } else {
-                    visibility = View.GONE
-                    isEnabled = true
-                }
+            else{
+                LoaderWithStatus.dismiss()
             }
+
+//            binding.loader.apply {
+//
+//                if (it.first) {
+//                    visibility = View.VISIBLE
+//                    isEnabled = false
+//                } else {
+//                    visibility = View.GONE
+//                    isEnabled = true
+//                }
+//            }
         }
     }
 
     private fun startCamera() {
         CommonMethods.showLogs("SOSActivity", "Starting camera initialization")
 
+        viewModel.isSendingSos.postValue(Pair(true,"Starting Camera"))
         binding.previewView.visibility = View.VISIBLE
         val cameraProviderFuture = ProcessCameraProvider.getInstance(applicationContext)
         cameraProviderFuture.addListener({
@@ -109,6 +118,7 @@ class SOSActivity : AppCompatActivity() {
                 CommonMethods.showLogs("SOSActivity", "Camera successfully initialized")
 
             } catch (e: Exception) {
+                viewModel.isSendingSos.postValue(Pair(false,""))
                 CommonMethods.showLogs("SOSActivity", "Error initializing camera: ${e.message}")
 
                 Toast.makeText(this, "Error initializing camera: ${e.message}", Toast.LENGTH_SHORT)
@@ -119,6 +129,7 @@ class SOSActivity : AppCompatActivity() {
 
     private fun setupCameraObservers() {
         CommonMethods.showLogs("SOSActivity", "Setting up camera observers")
+
 
         cameraViewModel.photoUri.observe(this) { uri ->
             CommonMethods.showLogs("SOSActivity", "Setting up camera observers")
@@ -157,7 +168,7 @@ class SOSActivity : AppCompatActivity() {
 
                     // Append the help message with the location
                     viewModel.appendMessage("I need help! My location is: https://maps.google.com/?q=${location.location.latitude},${location.location.longitude}")
-
+                    viewModel.isSendingSos.postValue(Pair(true,"Sending Location"))
                     // Retrieve the contacts
                     val contacts = viewModel.allContacts.value
                     if (!contacts.isNullOrEmpty()) { // Check // if contacts are not null or empty
@@ -203,7 +214,7 @@ class SOSActivity : AppCompatActivity() {
     }
 
     private fun stopLoader() {
-        viewModel.isSendingSos.postValue(false)
+        viewModel.isSendingSos.postValue(Pair(false,""))
     }
 
     private fun showToast(message: String) {

@@ -1,37 +1,35 @@
 package com.isar.kkrakshakavach.sos
 
 import android.Manifest
+import android.app.Activity
 import android.app.Application
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.CountDownTimer
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.view.View
 import android.widget.Toast
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.FileDescriptorOutputOptions
-import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
-import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_ENCODING_FAILED
-import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_NO_VALID_DATA
-import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_RECORDER_ERROR
-import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_UNKNOWN
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.FirebaseApp
 import com.google.firebase.storage.FirebaseStorage
+import com.isar.kkrakshakavach.retrofit.RetrofitInstance
+import com.isar.kkrakshakavach.retrofit.ShortenedUrlResponse
 import com.isar.kkrakshakavach.utils.CommonMethods
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +38,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -51,6 +52,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         FirebaseStorage.getInstance(FirebaseApp.getInstance("StorageApp")).reference
     private val appContext = application.applicationContext
 
+    private  var viewModel: SOSViewmodel? = null
     val photoUri = MutableLiveData<Uri>()
     val errorMessage = MutableLiveData<String>()
     val isCapturing = MutableLiveData<Boolean>()
@@ -90,6 +92,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         return suspendCancellableCoroutine { continuation ->
 
             try {
+                viewModel?.isSendingSos?.postValue(Pair(true, "Uploading Image"))
+
                 val photoFile = File(
                     appContext.externalCacheDir, generateUniqueFilename() + ".jpg"
                 )
@@ -104,14 +108,22 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                         }
 
                         override fun onError(exception: ImageCaptureException) {
+                            viewModel?.isSendingSos?.postValue(Pair(false, ""))
                             CommonMethods.showLogs(
                                 "CAMERA", "ror capturing photo: ${exception.message}"
                             )
                             continuation.resumeWithException(exception)
                         }
                     })
-                    ?: continuation.resumeWithException(IllegalStateException("ImageCapture is null"))
+                    ?: {
+                        continuation.resumeWithException(IllegalStateException("ImageCapture is null"))
+                        viewModel?.isSendingSos?.postValue(Pair(false, ""))
+
+
+                    }
             } catch (e: Exception) {
+                viewModel?.isSendingSos?.postValue(Pair(false, ""))
+
                 continuation.resumeWithException(e)
             }
 
@@ -122,39 +134,73 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         viewModel: SOSViewmodel, imageCapture: ImageCapture, context: Context
     ) {
         this.imageCapture = imageCapture
+        this.viewModel = viewModel
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                viewModel.isSendingSos.postValue(Pair(true,"Starting Video Recording"))
                 CommonMethods.showLogs("CAMERA", "arting capture and upload flow")
 
 
                 // Capture Video
                 val videoUri = recordVideo()
                 CommonMethods.showLogs("Camer","Video Get")
+
                 val videoUrl = uploadToFirebase(videoUri, "videos/")
-                Handler(Looper.getMainLooper()).post {
-                    viewModel.sendCamerasSms(appContext,"Video = $videoUrl")
-                }
+                CommonMethods.showLogs("TAG","Size of video ${videoUrl.length}")
 
 //                viewModel.appendMessage("Video URL: $videoUrl")
                 CommonMethods.showLogs("CAMERA", "Video uploaded: $videoUrl")
+                (context as? Activity)?.runOnUiThread {
+                    Toast.makeText(context, "Video Sent Successfully", Toast.LENGTH_LONG).show()
+                }
 
-                Toast.makeText(context, "Video Sent Successfully", Toast.LENGTH_LONG).show()
                 // Capture Photo
                 val imageUri = capturePhoto()
                 val imageUrl = uploadToFirebase(imageUri, "images/")
-                viewModel.appendMessage("Image URL: $imageUrl")
+//                viewModel.sendCamerasSms(context,"Image: $imageUrl")
+//                viewModel.appendMessage("Image URL: $imageUrl")
                 CommonMethods.showLogs("CAMERA", "age uploaded: $imageUrl")
+                CommonMethods.showLogs("TAG","Size of Image ${imageUrl.length}")
 
-
+//                binding.previewView.visibility = View.GONE
+//                cameraProvider.unbindAll()
                 // Send SMS
 //                viewModel.sendCamerasSms(context)
                 CommonMethods.showLogs("CAMERA", "SOS sent successfully")
+
             } catch (e: Exception) {
+                viewModel.isSendingSos.postValue(Pair(false, ""))
+
                 CommonMethods.showLogs("CAMERA", "Error in capture and upload flow: ${e.message}")
                 errorMessage.postValue(e.message)
             }
         }
+    }
+
+    fun shortLink(link : String){
+        viewModel?.isSendingSos?.postValue(Pair(true,"Shortening Url"))
+        RetrofitInstance.api.shortenUrl(link).enqueue(object : Callback<ShortenedUrlResponse> {
+            override fun onResponse(
+                call: Call<ShortenedUrlResponse>,
+                response: Response<ShortenedUrlResponse>
+            ) {
+                if (response.isSuccessful) {
+                    val shortenedUrl = response.body()?.shortenedUrl
+                    viewModel?.sendCamerasSms(appContext, "$ = $shortenedUrl")
+                    CommonMethods.showLogs("SHORT","${response.body()}")
+                } else {
+                    viewModel?.isSendingSos?.postValue(Pair(false,"Shortening Url"))
+                    CommonMethods.showLogs("SHORT","$response")
+                }
+            }
+
+            override fun onFailure(call: Call<ShortenedUrlResponse>, t: Throwable) {
+//                Toast.makeText(appContext, "Error: ${t.message}", Toast.LENGTH_LONG).show()
+                CommonMethods.showLogs("ERROR","Error: ${t.message}")
+            }
+        })
+
     }
 
     private suspend fun recordVideo(): Uri {
@@ -185,9 +231,11 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
 
                 if (activeRecording != null) {
+                    viewModel?.isSendingSos?.postValue(Pair(false,""))
                     throw Exception("Recording is already in progress.")
                 }
                 if (ActivityCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    viewModel?.isSendingSos?.postValue(Pair(false,""))
                     continuation.resumeWithException(Exception("Audio recording permission not granted"))
                     return@suspendCancellableCoroutine
                 }
@@ -196,6 +244,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                             appContext, Manifest.permission.READ_MEDIA_VIDEO
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
+                        viewModel?.isSendingSos?.postValue(Pair(false,""))
                         continuation.resumeWithException(
                             Exception("Media access permission not granted for Android 13+")
                         )
@@ -206,6 +255,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                             appContext, Manifest.permission.WRITE_EXTERNAL_STORAGE
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
+                        viewModel?.isSendingSos?.postValue(Pair(false,""))
                         continuation.resumeWithException(
                             Exception("External Storage permission not granted")
                         )
@@ -230,7 +280,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                                 CommonMethods.showLogs("CAMERA", "Video recording finalized")
 
                                 if (recordEvent.hasError()) {
-
+                                    viewModel?.isSendingSos?.postValue(Pair(false,""))
                                     continuation.resumeWithException(Exception("Error recording video: ${recordEvent.error} ${recordEvent.outputResults}"))
 //                                    when (recordEvent.error) {
 //                                        ERROR_UNKNOWN, ERROR_RECORDER_ERROR, ERROR_ENCODING_FAILED, ERROR_NO_VALID_DATA -> {
@@ -280,6 +330,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                 CommonMethods.showLogs("CAMERA", "Video recording started")
 
             } catch (e: Exception) {
+                viewModel?.isSendingSos?.postValue(Pair(false,""))
                 CommonMethods.showLogs("CAMERA", "Error recording video: ${e.message}")
                 continuation.resumeWithException(e)
             }
@@ -352,16 +403,39 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     private suspend fun uploadToFirebase(fileUri: Uri, folder: String): String {
         val fileName = fileUri.lastPathSegment ?: System.currentTimeMillis().toString()
-        val fileRef = storage.child("$folder$fileName")
+        val fileRef = storage.child("$folder/$fileName")
 
-        return fileRef.putFile(fileUri).continueWithTask { task ->
-            if (!task.isSuccessful) {
-                CommonMethods.showLogs("CAMERA", "ror uploading file: ${task.exception?.message}")
-                throw task.exception ?: Exception("Unknown error occurred while uploading")
+        viewModel?.isSendingSos?.postValue(Pair(true, "Uploading"))
+
+        return try {
+            val uploadTask = fileRef.putFile(fileUri)
+
+            uploadTask.addOnProgressListener { snapshot ->
+                val progress = (100 * snapshot.bytesTransferred / snapshot.totalByteCount).toInt()
+                CommonMethods.showLogs("UPLOAD", "Progress: $progress%")
+                viewModel?.isSendingSos?.postValue(Pair(true, "Uploading: $progress%"))
+            }.addOnFailureListener { exception ->
+                CommonMethods.showLogs("CAMERA", "Error uploading file: ${exception.message}")
+                viewModel?.isSendingSos?.postValue(Pair(false, ""))
             }
-            fileRef.downloadUrl
-        }.await().toString().also {
-            CommonMethods.showLogs("CAMERA", "le uploaded successfully: $it")
+
+            // Await completion of the upload
+            uploadTask.continueWithTask { task ->
+                if (!task.isSuccessful) {
+                    CommonMethods.showLogs("CAMERA", "Error uploading file: ${task.exception?.message}")
+                    viewModel?.isSendingSos?.postValue(Pair(false, ""))
+                    throw task.exception ?: Exception("Unknown error occurred while uploading")
+                }
+                fileRef.downloadUrl
+            }.await().toString().also {
+                CommonMethods.showLogs("CAMERA", "File uploaded successfully: $it")
+                shortLink(it)
+
+            }
+        } catch (e: Exception) {
+            CommonMethods.showLogs("CAMERA", "Upload failed: ${e.message}")
+            throw e
         }
     }
+
 }
