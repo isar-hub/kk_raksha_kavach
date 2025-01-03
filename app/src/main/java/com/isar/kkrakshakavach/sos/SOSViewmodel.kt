@@ -3,21 +3,38 @@ package com.isar.kkrakshakavach.sos
 import android.app.Activity
 import android.content.Context
 import android.widget.Toast
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.isar.kkrakshakavach.gesture.VolumeEventBus
 import com.isar.kkrakshakavach.utils.CommonMethods
 
 class SOSViewmodel(private val repository: SOSRepository) : ViewModel() {
 
+
+    private val _doubleTapDetected = MutableLiveData<Boolean>()
+    val doubleTapDetected: LiveData<Boolean> get() = _doubleTapDetected
+
+    fun live(context: LifecycleOwner) {
+        VolumeEventBus.observeDoubleTap(context) {
+            onDoubleTapDetected()
+        }
+    }
+
+    private fun onDoubleTapDetected() {
+        // Handle your custom logic here
+        _doubleTapDetected.value = true
+    }
+
     private val _locationLiveData = MutableLiveData<LocationUpdate>()
     val locationLiveData: LiveData<LocationUpdate> get() = _locationLiveData
 
-    var isSendingSos = MutableLiveData(Pair(false,""))
+    var isSendingSos = MutableLiveData(Pair(false, ""))
     private var messageString: String = ""
     val message: String get() = messageString
-     fun appendMessage(newMessage: String) {
+    fun appendMessage(newMessage: String) {
         messageString += if (messageString.isEmpty()) {
             newMessage
         } else {
@@ -41,13 +58,12 @@ class SOSViewmodel(private val repository: SOSRepository) : ViewModel() {
     }
 
 
-
     private fun getAllContacts() {
         _allContacts.postValue(repository.getAllContacts())
     }
 
-    fun sendSms(contact: String,context: Context) {
-        repository.sendSMS(contact, message, context,this)
+    fun sendSms(contact: String, context: Context) {
+        repository.sendSMS(contact, message, context, this)
     }
 
     fun sendCamerasSms(context: Context, newMessage: String) {
@@ -66,7 +82,6 @@ class SOSViewmodel(private val repository: SOSRepository) : ViewModel() {
             CommonMethods.showLogs("SOS", "allContacts is not empty, sending messages")
 
             isSendingSos.postValue(Pair(true, "Sending Message"))
-
             allContacts.value!!.forEach {
                 CommonMethods.showLogs("SOS", "Sending SMS to: $it")
                 repository.sendSMS(it, newMessage, context, this)
@@ -79,8 +94,7 @@ class SOSViewmodel(private val repository: SOSRepository) : ViewModel() {
 class SOSViewModelFactory(private val repository: SOSRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SOSViewmodel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return SOSViewmodel(repository) as T
+            @Suppress("UNCHECKED_CAST") return SOSViewmodel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

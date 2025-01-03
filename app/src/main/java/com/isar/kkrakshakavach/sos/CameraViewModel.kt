@@ -38,9 +38,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -178,30 +176,30 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun shortLink(link : String){
-        viewModel?.isSendingSos?.postValue(Pair(true,"Shortening Url"))
-        RetrofitInstance.api.shortenUrl(link).enqueue(object : Callback<ShortenedUrlResponse> {
-            override fun onResponse(
-                call: Call<ShortenedUrlResponse>,
-                response: Response<ShortenedUrlResponse>
-            ) {
-                if (response.isSuccessful) {
-                    val shortenedUrl = response.body()?.shortenedUrl
-
-                    CommonMethods.showLogs("SHORT","${response.body()}")
-                } else {
-                    viewModel?.isSendingSos?.postValue(Pair(false,"Shortening Url"))
-                    CommonMethods.showLogs("SHORT","$response")
-                }
-            }
-
-            override fun onFailure(call: Call<ShortenedUrlResponse>, t: Throwable) {
-//                Toast.makeText(appContext, "Error: ${t.message}", Toast.LENGTH_LONG).show()
-                CommonMethods.showLogs("ERROR","Error: ${t.message}")
-            }
-        })
-
-    }
+//    fun shortLink(link : String){
+//        viewModel?.isSendingSos?.postValue(Pair(true,"Shortening Url"))
+//        RetrofitInstance.api.shortenUrl(link).enqueue(object : Callback<ShortenedUrlResponse> {
+//            override fun onResponse(
+//                call: Call<ShortenedUrlResponse>,
+//                response: Response<ShortenedUrlResponse>
+//            ) {
+//                if (response.isSuccessful) {
+//                    val shortenedUrl = response.body()?.shortenedUrl
+//
+//                    CommonMethods.showLogs("SHORT","${response.body()}")
+//                } else {
+//                    viewModel?.isSendingSos?.postValue(Pair(false,"Shortening Url"))
+//                    CommonMethods.showLogs("SHORT","$response")
+//                }
+//            }
+//
+//            override fun onFailure(call: Call<ShortenedUrlResponse>, t: Throwable) {
+////                Toast.makeText(appContext, "Error: ${t.message}", Toast.LENGTH_LONG).show()
+//                CommonMethods.showLogs("ERROR","Error: ${t.message}")
+//            }
+//        })
+//
+//    }
 
     private suspend fun recordVideo(): Uri {
         return suspendCancellableCoroutine { continuation ->
@@ -327,7 +325,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 //                    ProcessCameraProvider.getInstance(appContext).
                 }
 
-                CommonMethods.showLogs("CAMERA", "Video recording started")
+                viewModel?.isSendingSos?.postValue(Pair(true,"Video Recording Started"))
 
             } catch (e: Exception) {
                 viewModel?.isSendingSos?.postValue(Pair(false,""))
