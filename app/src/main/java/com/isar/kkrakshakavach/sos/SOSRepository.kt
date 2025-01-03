@@ -1,20 +1,18 @@
 package com.isar.kkrakshakavach.sos
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.Location
 import android.location.LocationManager
 import android.telephony.SmsManager
+import android.telephony.SubscriptionManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
-import androidx.lifecycle.ViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
 import com.isar.kkrakshakavach.db.DbClassHelper
 import com.isar.kkrakshakavach.utils.CommonMethods
+
 
 class SOSRepository(
     private val dbHelper: DbClassHelper,
@@ -65,24 +63,47 @@ class SOSRepository(
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     }
 
-    fun sendSMS(contact: String, message: String,context: Context,viewModel: SOSViewmodel) {
+    fun sendSMS(contact: String, message: String, context: Context, viewModel: SOSViewmodel) {
         try {
-            val smsManager = context.getSystemService(SmsManager::class.java)
-            smsManager.sendTextMessage(contact, null, message, null, null)
+            CommonMethods.showLogs("SMS", "Attempting to send SMS...")
+
+            // Step 1: Log contact and message details
+            CommonMethods.showLogs("SMS", "Contact: $contact, Message: $message")
+
+            // Step 2: Fetch subscription ID and log it
+            val subscriptionId = SubscriptionManager.getDefaultSmsSubscriptionId()
+            CommonMethods.showLogs("SMS", "Default SMS Subscription ID: $subscriptionId")
+
+            val smsManager = SmsManager.getSmsManagerForSubscriptionId(subscriptionId)
+
+            // Step 3: Divide message and log parts
+            val parts: ArrayList<String> = smsManager.divideMessage(message)
+            CommonMethods.showLogs("SMS", "Message divided into ${parts.size} parts: $parts")
+
+            // Step 4: Attempt to send SMS
+            smsManager.sendMultipartTextMessage(contact, null, parts, null, null)
+            CommonMethods.showLogs("SMS", "SMS sent successfully to $contact")
+
             (context as? Activity)?.runOnUiThread {
                 Toast.makeText(context, "Location Sent", Toast.LENGTH_SHORT).show()
             }
-            CommonMethods.showLogs("SMS","Sms sent to $contact")
 
-            viewModel.isSendingSos.postValue(Pair(false,""))
+            // Step 5: Update ViewModel and log state
+            viewModel.isSendingSos.postValue(Pair(false, ""))
+            CommonMethods.showLogs("SMS", "ViewModel updated: isSendingSos set to false")
 
         } catch (e: Exception) {
-            viewModel.isSendingSos.postValue(Pair(false,""))
-            CommonMethods.showLogs("SMS","FAILED : ${e.message}")
-            (context as? Activity)?.runOnUiThread {
-                Toast.makeText(context, "Failed to send SMS to ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            // Step 6: Catch and log the exception
+            CommonMethods.showLogs("SMS", "FAILED to send SMS: ${e.message}")
 
+            viewModel.isSendingSos.postValue(Pair(false, ""))
+            CommonMethods.showLogs("SMS", "ViewModel updated: isSendingSos set to false due to failure")
+
+            // Step 7: Notify user of the failure
+            (context as? Activity)?.runOnUiThread {
+                Toast.makeText(context, "Failed to send SMS: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
+
 }

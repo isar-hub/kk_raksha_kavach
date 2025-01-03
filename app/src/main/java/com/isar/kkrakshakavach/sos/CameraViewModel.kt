@@ -146,18 +146,18 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                 val videoUri = recordVideo()
                 CommonMethods.showLogs("Camer","Video Get")
 
-                val videoUrl = uploadToFirebase(videoUri, "videos/")
+                val videoUrl = uploadToFirebase(videoUri, "videos/","Video")
                 CommonMethods.showLogs("TAG","Size of video ${videoUrl.length}")
 
 //                viewModel.appendMessage("Video URL: $videoUrl")
                 CommonMethods.showLogs("CAMERA", "Video uploaded: $videoUrl")
-                (context as? Activity)?.runOnUiThread {
-                    Toast.makeText(context, "Video Sent Successfully", Toast.LENGTH_LONG).show()
-                }
+//                (context as? Activity)?.runOnUiThread {
+//                    Toast.makeText(context, "Video Sent Successfully", Toast.LENGTH_LONG).show()
+//                }
 
                 // Capture Photo
                 val imageUri = capturePhoto()
-                val imageUrl = uploadToFirebase(imageUri, "images/")
+                val imageUrl = uploadToFirebase(imageUri, "images/","Image")
 //                viewModel.sendCamerasSms(context,"Image: $imageUrl")
 //                viewModel.appendMessage("Image URL: $imageUrl")
                 CommonMethods.showLogs("CAMERA", "age uploaded: $imageUrl")
@@ -187,7 +187,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             ) {
                 if (response.isSuccessful) {
                     val shortenedUrl = response.body()?.shortenedUrl
-                    viewModel?.sendCamerasSms(appContext, "$ = $shortenedUrl")
+
                     CommonMethods.showLogs("SHORT","${response.body()}")
                 } else {
                     viewModel?.isSendingSos?.postValue(Pair(false,"Shortening Url"))
@@ -401,7 +401,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 //        }
 //    }
 
-    private suspend fun uploadToFirebase(fileUri: Uri, folder: String): String {
+    private suspend fun uploadToFirebase(fileUri: Uri, folder: String,name : String): String {
         val fileName = fileUri.lastPathSegment ?: System.currentTimeMillis().toString()
         val fileRef = storage.child("$folder/$fileName")
 
@@ -427,9 +427,9 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                     throw task.exception ?: Exception("Unknown error occurred while uploading")
                 }
                 fileRef.downloadUrl
-            }.await().toString().also {
-                CommonMethods.showLogs("CAMERA", "File uploaded successfully: $it")
-                shortLink(it)
+            }.await().toString().also { uploadedUrl ->
+                CommonMethods.showLogs("CAMERA", "File uploaded successfully: $uploadedUrl")
+                viewModel?.sendCamerasSms(appContext, "$name = $uploadedUrl")
 
             }
         } catch (e: Exception) {
