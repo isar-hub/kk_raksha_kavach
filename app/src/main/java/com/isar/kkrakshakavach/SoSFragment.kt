@@ -183,7 +183,7 @@ class SoSFragment : Fragment(), LocationListener {
                 runBlocking {
                     async { startCamera() }.await()
 
-//                    sendMessages(message)
+                    sendMessages(message)
                 }
             } ?: run {
                 Log.e("LocationError", "Last known location is null, requesting new location.")

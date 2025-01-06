@@ -169,11 +169,12 @@ class SOSActivity : AppCompatActivity() {
                     // Log the location details
                     CommonMethods.showLogs(
                         "SOS",
-                        "Location is ${location.location.latitude} and ${location.location.longitude}"
+                        "Location is ${location.location.latitude} and ${location.location.longitude} \nPlease Listen this : https://firebasestorage.googleapis.com/v0/b/imagine-bc615.appspot.com/o/audio%2Faudio.mp4?alt=media&token=774e7a85-3a38-4ffd-965c-4eb88997458a"
                     )
 
                     // Append the help message with the location
-                    val message = "I need help! My location is: https://maps.google.com/?q=${location.location.latitude},${location.location.longitude}"
+                    val message = "I need help! My location is: https://maps.google.com/?q=${location.location.latitude},${location.location.longitude} \n" +
+                            "Please Listen this : https://firebasestorage.googleapis.com/v0/b/imagine-bc615.appspot.com/o/audio%2Faudio.mp4?alt=media&token=774e7a85-3a38-4ffd-965c-4eb88997458a"
                     viewModel.isSendingSos.postValue(Pair(true, "Sending Location"))
                     viewModel.sendCamerasSms(this,message)
 
