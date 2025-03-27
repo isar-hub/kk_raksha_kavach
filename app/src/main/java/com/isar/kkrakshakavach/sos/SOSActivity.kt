@@ -1,6 +1,5 @@
 package com.isar.kkrakshakavach.sos
 
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -33,8 +32,6 @@ class SOSActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySosactivityBinding
     private lateinit var viewModel: SOSViewmodel
     private val cameraViewModel: CameraViewModel by viewModels()
-
-
     private var imageCapture: ImageCapture? = null
 
 
@@ -51,6 +48,19 @@ class SOSActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this, factory)[SOSViewmodel::class.java]
         ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.SEND_SMS), 1)
 
+
+        setupObservers()
+        setupCameraObservers()
+
+
+        viewModel.isSendingSos.observe(this) {
+            CommonMethods.showLogs("SOSActivity", "isSendingSos observed with value: $it")
+            if (it.first) {
+                LoaderWithStatus.show(this, it.second)
+            } else {
+                LoaderWithStatus.dismiss()
+            }
+        }
         CommonMethods.showLogs("SOSActivity", "Activity created and initialized")
 
         binding.btSendLocation.setOnClickListener {
@@ -59,18 +69,9 @@ class SOSActivity : AppCompatActivity() {
             viewModel.fetchLocation(this)
             startCamera()
         }
-        setupObservers()
-        setupCameraObservers()
 
-        viewModel.isSendingSos.observe(this) {
-            CommonMethods.showLogs("SOSActivity", "isSendingSos observed with value: $it")
-            if (it.first) {
-                LoaderWithStatus.show(this, it.second)
-//                setupObservers()
-//                setupCameraObservers()
-            } else {
-                LoaderWithStatus.dismiss()
-            }
+
+
 
 //            binding.loader.apply {
 //
@@ -82,7 +83,7 @@ class SOSActivity : AppCompatActivity() {
 //                    isEnabled = true
 //                }
 //            }
-        }
+//           }
     }
 
     private fun
@@ -120,6 +121,9 @@ class SOSActivity : AppCompatActivity() {
                     imageCapture
                 )
                 cameraViewModel.startCaptureAndUploadFlow(viewModel, imageCapture!!, this)
+
+//                binding.previewView.visibility = View.GONE
+
 
                 CommonMethods.showLogs("SOSActivity", "Camera successfully initialized")
 
